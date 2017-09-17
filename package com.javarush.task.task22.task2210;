@@ -1,0 +1,40 @@
+package com.javarush.task.task22.task2210;
+
+import java.util.ArrayList;
+import java.util.StringTokenizer;
+
+/*
+StringTokenizer
+
+Используя StringTokenizer разделить query на части по разделителю delimiter.
+Пример
+getTokens("level22.lesson13.task01", ".")
+
+Возвращает
+{"level22", "lesson13", "task01"}
+
+Требования:
+1. Метод getTokens должен использовать StringTokenizer.
+2. Метод getTokens должен быть публичным.
+3. Метод getTokens должен принимать два параметра типа String.
+4. Массив типа String возвращенный методом getTokens должен быть заполнен правильно(согласно условию задачи).
+*/
+public class Solution {
+    public static void main(String[] args) {
+        String[] ss = getTokens("level22.lesson13.task01", ".");
+       for(String s : ss) System.out.println(s);
+    }
+    public static String [] getTokens(String query, String delimiter) {
+        ArrayList<String> list = new ArrayList<>();
+        StringTokenizer stringTokenizer = new StringTokenizer(query,delimiter);
+        while (stringTokenizer.hasMoreTokens()){
+            String token = stringTokenizer.nextToken();
+            list.add(token);
+        }
+        String [] strings = new String[list.size()];
+        for(int i = 0; i < strings.length; i++){
+            strings[i] = list.get(i);
+        }
+        return strings;
+    }
+}
