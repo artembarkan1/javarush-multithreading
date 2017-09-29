@@ -1,0 +1,670 @@
+package com.javarush.task.task24.task2413;
+
+import java.awt.event.KeyEvent;
+import java.util.ArrayList;
+
+/**
+ * 
+ АРКАНОИД
+ Главный класс игры
+ */
+public class Arkanoid {
+    //ширина и высота
+    private int width;
+    private int height;
+
+    //список кирпичей
+    private ArrayList<Brick> bricks = new ArrayList<Brick>();
+    //шарик
+    private Ball ball;
+    //подставка
+    private Stand stand;
+
+    //игра закончена?
+    private boolean isGameOver = false;
+
+    public Arkanoid(int width, int height) {
+        this.width = width;
+        this.height = height;
+    }
+
+    public ArrayList<Brick> getBricks() {
+        return bricks;
+    }
+
+    public Ball getBall() {
+        return ball;
+    }
+
+    public void setBall(Ball ball) {
+        this.ball = ball;
+    }
+
+    public Stand getStand() {
+        return stand;
+    }
+
+    public void setStand(Stand stand) {
+        this.stand = stand;
+    }
+
+    /**
+     * Рисуем на холсте границы и все объекты.
+     */
+    void draw(Canvas canvas) {
+        drawBorders(canvas);
+
+        //draw bricks
+        for (Brick brick : bricks) {
+            brick.draw(canvas);
+        }
+
+        //draw ball
+        ball.draw(canvas);
+
+        //draw stand
+        stand.draw(canvas);
+
+    }
+
+    /**
+     * Рисуем на холсте границы
+     */
+    private void drawBorders(Canvas canvas) {
+        //draw game
+        for (int i = 0; i < width + 2; i++) {
+            for (int j = 0; j < height + 2; j++) {
+                canvas.setPoint(i, j, '.');
+            }
+        }
+
+        for (int i = 0; i < width + 2; i++) {
+            canvas.setPoint(i, 0, '-');
+            canvas.setPoint(i, height + 1, '-');
+        }
+
+        for (int i = 0; i < height + 2; i++) {
+            canvas.setPoint(0, i, '|');
+            canvas.setPoint(width + 1, i, '|');
+        }
+    }
+
+    /**
+     * Основной цикл программы.
+     * Тут происходят все важные действия
+     */
+    void run() throws Exception {
+        //Создаем холст для отрисовки.
+        Canvas canvas = new Canvas(width, height);
+
+        //Создаем объект "наблюдатель за клавиатурой" и стартуем его.
+        KeyboardObserver keyboardObserver = new KeyboardObserver();
+        keyboardObserver.start();
+
+        //Исполняем цикл, пока игра не окончека
+        while (!isGameOver) {
+            //"наблюдатель" содержит события о нажатии клавиш?
+            if (keyboardObserver.hasKeyEvents()) {
+                KeyEvent event = keyboardObserver.getEventFromTop();
+
+                //Если "стрелка влево" - сдвинуть фигурку влево
+                if (event.getKeyCode() == KeyEvent.VK_LEFT)
+                    stand.moveLeft();
+                    //Если "стрелка вправо" - сдвинуть фигурку вправо
+                else if (event.getKeyCode() == KeyEvent.VK_RIGHT)
+                    stand.moveRight();
+                    //Если "пробел" - запускаем шарик
+                else if (event.getKeyCode() == KeyEvent.VK_SPACE)
+                    ball.start();
+            }
+
+            //двигаем все объекты
+            move();
+
+            //проверяем столкновения
+            checkBricksBump();
+            checkStandBump();
+
+            //проверяем, что шарик мог улететь через дно.
+            checkEndGame();
+
+            //отрисовываем все объекты
+            canvas.clear();
+            draw(canvas);
+            canvas.print();
+
+            //пауза
+            Thread.sleep(300);
+        }
+
+        //Выводим сообщение "Game Over"
+        System.out.println("Game Over!");
+    }
+
+    /**
+     * Двигаем шарик и подставку.
+     */
+    public void move() {
+        ball.move();
+        stand.move();
+    }
+
+    /**
+     * Проверяем столкновение с кирпичами.
+     * Если столкновение было - шарик отлетает в случайном направлении 0..360 градусов
+     */
+    void checkBricksBump() {
+        for (Brick brick : new ArrayList<Brick>(bricks)) {
+            if (ball.isIntersec(brick)) {
+                double angle = Math.random() * 360;
+                ball.setDirection(angle);
+
+                bricks.remove(brick);
+            }
+        }
+    }
+
+    /**
+     * Проверяем столкновение с подставкой.
+     * Если столкновение было - шарик отлетает в случайном направлении  вверх 80..100 градусов.
+     */
+    void checkStandBump() {
+        if (ball.isIntersec(stand)) {
+            double angle = 90 + 20 * (Math.random() - 0.5);
+            ball.setDirection(angle);
+        }
+    }
+
+    /**
+     * Проверяем - не улетел ли шарик через дно.
+     * Если да - игра окончена (isGameOver = true)
+     */
+    void checkEndGame() {
+        if (ball.getY() > height && ball.getDy() > 0)
+            isGameOver = true;
+    }
+
+    public int getWidth() {
+        return width;
+    }
+
+    public int getHeight() {
+        return height;
+    }
+
+    public void setWidth(int width) {
+        this.width = width;
+    }
+
+    public void setHeight(int height) {
+        this.height = height;
+    }
+
+    public static Arkanoid game;
+
+    public static void main(String[] args) throws Exception {
+        game = new Arkanoid(20, 30);
+
+        Ball ball = new Ball(10, 29, 2, 95);
+        game.setBall(ball);
+
+        Stand stand = new Stand(10, 30);
+        game.setStand(stand);
+
+        game.getBricks().add(new Brick(3, 3));
+        game.getBricks().add(new Brick(7, 5));
+        game.getBricks().add(new Brick(12, 5));
+        game.getBricks().add(new Brick(16, 3));
+
+        game.run();
+    }
+}
+______________________________________________________________________________________________________________________________________
+
+package com.javarush.task.task24.task2413;
+
+/**
+ * Класс для шарика в игре
+ */
+public class Ball extends BaseObject {
+    //скорость
+    private double speed;
+    //направление  (в градусах от 0 до 360)
+    private double direction;
+
+    //текущее значение вектора движения (dx,dy)
+    private double dx;
+    private double dy;
+
+    //заморожен ли объект или может двигаться
+    private boolean isFrozen;
+
+    public Ball(double x, double y, double speed, double direction) {
+        super(x, y, 1);
+
+        this.direction = direction;
+        this.speed = speed;
+
+        this.isFrozen = true;
+    }
+
+    public double getSpeed() {
+        return speed;
+    }
+
+    public void setSpeed(double speed) {
+        this.speed = speed;
+    }
+
+    public double getDirection() {
+        return direction;
+    }
+
+    public double getDx() {
+        return dx;
+    }
+
+    public double getDy() {
+        return dy;
+    }
+
+    /**
+     * Устанавливаем новое направление движения.
+     * Тут же вычисляем и новый вектор.
+     * Такой подход удобно использовать при отскоках от стен.
+     */
+    void setDirection(double direction) {
+        this.direction = direction;
+
+        double angel = Math.toRadians(direction);
+        dx = Math.cos(angel) * speed;
+        dy = -Math.sin(angel) * speed;
+    }
+
+    /**
+     * Рисуем себя на "канвасе".
+     */
+    @Override
+    void draw(Canvas canvas) {
+        canvas.setPoint(x, y, 'O');
+    }
+
+    /**
+     * Двигаем себя на один шаг.
+     */
+    public void move() {
+        if (isFrozen) return;
+
+        x += dx;
+        y += dy;
+
+        checkRebound(1, Arkanoid.game.getWidth(), 1, Arkanoid.game.getHeight() + 5);
+    }
+
+    /**
+     * Проверяем не улетел ли шарик за стенку.
+     * Если да - отражаем его.
+     */
+    void checkRebound(int minx, int maxx, int miny, int maxy) {
+        if (x < minx) {
+            x = minx + (minx - x);
+            dx = -dx;
+        }
+
+        if (x > maxx) {
+            x = maxx - (x - maxx);
+            dx = -dx;
+        }
+
+        if (y < miny) {
+            y = miny + (miny - y);
+            dy = -dy;
+        }
+
+        if (y > maxy) {
+            y = maxy - (y - maxy);
+            dy = -dy;
+        }
+    }
+
+    /**
+     * Запускам шарик.
+     * isFrozen = false.
+     * Пересчитываем вектор движения (dx,dy).
+     */
+    void start() {
+        this.setDirection(direction);
+        this.isFrozen = false;
+    }
+}
+_____________________________________________________________________________________________________________________________________
+
+package com.javarush.task.task24.task2413;
+
+/**
+ * Базовый класс для всех объектов игры.
+ */
+public abstract class BaseObject {
+    //координаты
+    protected double x;
+    protected double y;
+    //радиус объекта
+    protected double radius;
+
+    protected BaseObject(double x, double y, double radius) {
+        this.x = x;
+        this.y = y;
+        this.radius = radius;
+    }
+
+    public double getX() {
+        return x;
+    }
+
+    public void setX(double x) {
+        this.x = x;
+    }
+
+    public double getY() {
+        return y;
+    }
+
+    public void setY(double y) {
+        this.y = y;
+    }
+
+    public double getRadius() {
+        return radius;
+    }
+
+    public void setRadius(double radius) {
+        this.radius = radius;
+    }
+
+    /**
+     * Метод рисует свой объект на "канвасе".
+     */
+    abstract void draw(Canvas canvas);
+
+    /**
+     * Двигаем себя на один ход.
+     */
+    abstract void move();
+
+    /**
+     * Проверяем - не выходит ли (x,y) за границы.
+     */
+    void checkBorders(double minx, double maxx, double miny, double maxy) {
+        if (x < minx) x = minx;
+        if (x > maxx) x = maxx;
+        if (y < miny) y = miny;
+        if (y > maxy) y = maxy;
+    }
+
+    /**
+     * Проверяем - пересекаются ли переданный(o) и наш(this) объекты.
+     */
+    boolean isIntersec(BaseObject o) {
+        double dx = x - o.x;
+        double dy = y - o.y;
+        double destination = Math.sqrt(dx * dx + dy * dy);
+        double destination2 = Math.max(radius, o.radius);
+        return destination <= destination2;
+    }
+}
+________________________________________________________________________________________________________________________________________
+
+package com.javarush.task.task24.task2413;
+
+/**
+ * Класс для объекта "кирпич".
+ */
+public class Brick extends BaseObject {
+    //картинка для отрисовки
+    private static int[][] matrix = {
+            {0, 0, 0, 0, 0},
+            {0, 1, 1, 1, 0},
+            {0, 1, 1, 1, 0},
+            {0, 0, 0, 0, 0},
+            {0, 0, 0, 0, 0},
+    };
+
+    public Brick(double x, double y) {
+        super(x, y, 3);
+    }
+
+    /**
+     * Рисуем себя на холсте
+     */
+    @Override
+    void draw(Canvas canvas) {
+        canvas.drawMatrix(x - radius + 1, y, matrix, 'H');
+    }
+
+    /**
+     * Ничего не делаем - кирпич неподвижен
+     */
+    @Override
+    void move() {
+        //do nothing
+    }
+}
+________________________________________________________________________________________________________________________________________
+package com.javarush.task.task24.task2413;
+
+/**
+ * Класс-холст для отрисовки.
+ */
+public class Canvas {
+    //ширина и высота
+    private int width;
+    private int height;
+    //матрица, где рисуем. символ - это цвет.
+    private char[][] matrix;
+
+    public Canvas(int width, int height) {
+        this.width = width;
+        this.height = height;
+        this.matrix = new char[height + 2][width + 2];
+    }
+
+    /**
+     * Очищаем холст
+     */
+    void clear() {
+        this.matrix = new char[height + 2][width + 2];
+    }
+
+    /**
+     * Печатаем переданную фигуру в указанных координатах цветом c.
+     * Если переданный массив содержит единицы, то на холсте им будут соответствовать символы - с.
+     */
+    void drawMatrix(double x, double y, int[][] matrix, char c) {
+        int height = matrix.length;
+        int width = matrix[0].length;
+
+        for (int i = 0; i < height; i++) {
+            for (int j = 0; j < width; j++) {
+                if (matrix[i][j] == 1)
+                    setPoint(x + j, y + i, c);
+            }
+        }
+    }
+
+    /**
+     * Ставим одну точку на холсте с координатами (x,y) и цветом - c.
+     */
+    void setPoint(double x, double y, char c) {
+        int x0 = (int) Math.round(x);
+        int y0 = (int) Math.round(y);
+        if (y0 < 0 || y0 >= matrix.length) return;
+        if (x0 < 0 || x0 >= matrix[y0].length) return;
+
+        matrix[y0][x0] = c;
+    }
+
+    /**
+     * Печатаем содержимое холста на экран.
+     */
+    void print() {
+        System.out.println();
+
+        for (int i = 0; i < height + 2; i++) {
+            for (int j = 0; j < width + 2; j++) {
+                System.out.print(" ");
+                System.out.print(matrix[i][j]);
+                System.out.print(" ");
+            }
+
+            System.out.println();
+        }
+
+        System.out.println();
+        System.out.println();
+        System.out.println();
+    }
+
+    public int getWidth() {
+        return width;
+    }
+
+    public int getHeight() {
+        return height;
+    }
+
+    public char[][] getMatrix() {
+        return matrix;
+    }
+}
+_______________________________________________________________________________________________________________________________________
+package com.javarush.task.task24.task2413;
+
+import javax.swing.*;
+import java.awt.*;
+import java.awt.event.FocusEvent;
+import java.awt.event.FocusListener;
+import java.awt.event.KeyEvent;
+import java.awt.event.KeyListener;
+import java.util.Queue;
+import java.util.concurrent.ArrayBlockingQueue;
+
+public class KeyboardObserver extends Thread {
+    private Queue<KeyEvent> keyEvents = new ArrayBlockingQueue<KeyEvent>(100);
+
+    private JFrame frame;
+
+    @Override
+    public void run() {
+        frame = new JFrame("KeyPress Tester");
+        frame.setTitle("Transparent JFrame Demo");
+        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+
+        frame.setUndecorated(true);
+        frame.setSize(400, 400);
+        frame.setExtendedState(JFrame.MAXIMIZED_BOTH);
+        frame.setLayout(new GridBagLayout());
+
+        frame.setOpacity(0.0f);
+        frame.setVisible(true);
+
+        frame.addFocusListener(new FocusListener() {
+            @Override
+            public void focusGained(FocusEvent e) {
+                //do nothing
+            }
+
+            @Override
+            public void focusLost(FocusEvent e) {
+                System.exit(0);
+            }
+        });
+
+        frame.addKeyListener(new KeyListener() {
+
+            public void keyTyped(KeyEvent e) {
+                //do nothing
+            }
+
+            public void keyReleased(KeyEvent e) {
+                //do nothing
+            }
+
+            public void keyPressed(KeyEvent e) {
+                keyEvents.add(e);
+            }
+        });
+    }
+
+    public boolean hasKeyEvents() {
+        return !keyEvents.isEmpty();
+    }
+
+    public KeyEvent getEventFromTop() {
+        return keyEvents.poll();
+    }
+}
+____________________________________________________________________________________________________________________________________
+package com.javarush.task.task24.task2413;
+
+/**
+ * Подставка, с помощью которой отражаем мячик.
+ */
+public class Stand extends BaseObject {
+    //картинка для отрисовки
+    private static int[][] matrix = {
+            {1, 1, 1, 1, 1},
+            {1, 0, 0, 0, 1},
+            {0, 0, 0, 0, 0},
+            {0, 0, 0, 0, 0},
+            {0, 0, 0, 0, 0},
+    };
+
+    //скорость
+    private double speed = 1;
+    //направление (-1 влево, +1 вправо)
+    private double direction = 0;
+
+    public Stand(double x, double y) {
+        super(x, y, 3);
+    }
+
+    /**
+     * Метод передвигает подставку в соответствии с текущим значением direction.
+     */
+    void move() {
+        double dx = speed * direction;
+        x = x + dx;
+
+        checkBorders(radius, Arkanoid.game.getWidth() - radius + 1, 1, Arkanoid.game.getHeight() + 1);
+    }
+
+    /**
+     * direction устанавливается равным -1
+     */
+    void moveLeft() {
+        direction = -1;
+    }
+
+    /**
+     * direction устанавливается равным +1
+     */
+    void moveRight() {
+        direction = 1;
+    }
+
+    public double getSpeed() {
+        return speed;
+    }
+
+    public double getDirection() {
+        return direction;
+    }
+
+    /**
+     * Отрисовываем себя на холсте
+     */
+    @Override
+    void draw(Canvas canvas) {
+        canvas.drawMatrix(x - radius + 1, y, matrix, 'M');
+    }
+}
